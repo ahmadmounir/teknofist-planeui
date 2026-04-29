@@ -19,7 +19,6 @@ function GCSDashboard() {
       }}
     >
       <GCSHeader />
-      // ... داخل GCSDashboard
       <main className="grid flex-1 min-h-0 gap-3 p-3 lg:grid-cols-[1fr_300px]">
         {/* الجهة اليسرى: موازنة جديدة بين الفيديو والخريطة */}
         {/* قمنا بتعديل النسب إلى 1.7fr للفيديو و 1.3fr للخريطة */}

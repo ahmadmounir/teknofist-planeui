@@ -149,6 +149,39 @@ export default function TelemetrySidebar() {
           </div>
         </div>
       </div>
+
+      <div className="rounded-lg border border-border bg-gcs-surface p-3">
+        <SectionLabel label="MISSION COMMANDS" small />
+        <div className="mt-2 grid grid-cols-2 gap-3">
+          <button
+            className="rounded-lg border px-3 py-3 font-mono text-[12px] font-bold uppercase  transition-colors cursor-pointer"
+            style={{
+              color: "#FF5A5A",
+              borderColor: "#FF3B3B",
+              backgroundColor: "rgba(255,59,59,0.10)",
+            }}
+            onClick={() => {
+              console.warn("[SAFETY] ABORT MISSION command requested");
+            }}
+          >
+            ABORT MISSION
+          </button>
+
+          <button
+            className="rounded-lg border px-3 py-3 font-mono text-[12px] font-bold uppercase transition-colors cursor-pointer"
+            style={{
+              color: "var(--gcs-orange)",
+              borderColor: "oklch(0.68 0.22 45 / 0.5)",
+              backgroundColor: "oklch(0.68 0.22 45 / 0.11)",
+            }}
+            onClick={() => {
+              console.warn("[SAFETY] RTL command requested");
+            }}
+          >
+            RTL
+          </button>
+        </div>
+      </div>
     </aside>
   );
 }

@@ -176,53 +176,8 @@ export default function VideoPanel({ onLockConfirmed }: VideoPanelProps) {
         <MissionClock />
       </div>
 
-      {/* BOTTOM-LEFT: HUD cluster (horizon + sole battery indicator + quick flight numbers) */}
+      {/* BOTTOM-LEFT: HUD cluster (horizon + quick flight numbers) */}
       <div className="absolute bottom-3 left-3 z-20 flex items-end gap-2.5">
-        <div className="rounded border border-border bg-black/70 p-2">
-          <div className="flex items-center gap-2">
-            <ArtificialHorizon
-              pitch={telemetry.dikilme}
-              roll={telemetry.yatis}
-              size={74}
-            />
-
-            <div className="flex min-w-[118px] flex-col gap-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-[9px] tracking-widest text-muted-foreground uppercase">
-                  BAT
-                </span>
-                <span
-                  className={`font-mono text-xs font-bold tabular-nums ${flash ? "opacity-60" : ""}`}
-                  style={{ color: batteryColor }}
-                >
-                  {telemetry.batarya}%
-                </span>
-              </div>
-
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${telemetry.batarya}%`,
-                    backgroundColor: batteryColor,
-                  }}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
-                <HudMini
-                  label="PIT"
-                  value={`${telemetry.dikilme.toFixed(1)} deg`}
-                />
-                <HudMini
-                  label="ROL"
-                  value={`${telemetry.yatis.toFixed(1)} deg`}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div className="flex flex-col gap-1.5">
           <TelemetryCard
             label="ALT"
@@ -236,6 +191,51 @@ export default function VideoPanel({ onLockConfirmed }: VideoPanelProps) {
             unit="m/s"
             flash={flash}
           />
+        </div>
+      </div>
+
+      {/* BOTTOM-RIGHT: Battery + attitude minis */}
+      <div className="absolute bottom-3 right-3 z-20">
+        <div className="rounded border border-border flex items-center gap-3 bg-black/70 p-2">
+            <ArtificialHorizon
+              pitch={telemetry.dikilme}
+              roll={telemetry.yatis}
+              size={74}
+            />
+          <div className="flex min-w-[118px] flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-[9px] tracking-widest text-muted-foreground uppercase">
+                BAT
+              </span>
+              <span
+                className={`font-mono text-xs font-bold tabular-nums ${flash ? "opacity-60" : ""}`}
+                style={{ color: batteryColor }}
+              >
+                {telemetry.batarya}%
+              </span>
+            </div>
+
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${telemetry.batarya}%`,
+                  backgroundColor: batteryColor,
+                }}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+              <HudMini
+                label="PIT"
+                value={`${telemetry.dikilme.toFixed(1)} deg`}
+              />
+              <HudMini
+                label="ROL"
+                value={`${telemetry.yatis.toFixed(1)} deg`}
+              />
+            </div>
+          </div>
         </div>
       </div>
 

@@ -1,21 +1,58 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useApp } from "@/context/AppContext";
 import ArtificialHorizon from "@/components/gcs/ArtificialHorizon";
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Live feed source: uqab_video_server's MJPEG endpoint (video_stream_node,
+// package uqab_video_server). Default matches that node's default port (8080)
+// on localhost for same-machine dev/testing.
+// ──────────────────────────────────────────────────────────────────────────────
+const ENV = (import.meta as unknown as { env: Record<string, string | undefined> }).env
+const VIDEO_STREAM_URL = ENV.VITE_VIDEO_STREAM_URL ?? "http://127.0.0.1:8080/stream"
+const RECONNECT_DELAY_MS = 1000
 
 interface VideoPanelProps {
   onLockConfirmed: (otonom: boolean) => Promise<void>;
 }
 
 export default function VideoPanel({ onLockConfirmed }: VideoPanelProps) {
-  const { state } = useApp();
+  const { state, setVideoConnected } = useApp();
   const { telemetry } = state;
   const [flash, setFlash] = useState(false);
+  const [videoOk, setVideoOk] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setFlash(true);
     const t = setTimeout(() => setFlash(false), 600);
     return () => clearTimeout(t);
   }, [telemetry.irtifa, telemetry.hiz, telemetry.batarya]);
+
+  // MJPEG multipart streams don't auto-reconnect on drop, so retry with backoff
+  // and cache-bust the URL to force a fresh GET /stream.
+  const handleStreamLoad = useCallback(() => {
+    setVideoOk(true);
+    setVideoConnected(true);
+  }, [setVideoConnected]);
+
+  const handleStreamError = useCallback(() => {
+    setVideoOk(false);
+    setVideoConnected(false);
+    if (retryTimeoutRef.current) return;
+    retryTimeoutRef.current = setTimeout(() => {
+      retryTimeoutRef.current = null;
+      setReloadToken((t) => t + 1);
+    }, RECONNECT_DELAY_MS);
+  }, [setVideoConnected]);
+
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    };
+  }, []);
+
+  const streamSrc = `${VIDEO_STREAM_URL}${VIDEO_STREAM_URL.includes("?") ? "&" : "?"}t=${reloadToken}`;
 
   const batteryColor =
     telemetry.batarya > 50
@@ -40,47 +77,59 @@ export default function VideoPanel({ onLockConfirmed }: VideoPanelProps) {
         />
       </div>
 
-      {/* Camera feed placeholder */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div
-          className="w-full h-full"
-          style={{
-            background:
-              "radial-gradient(ellipse at center, oklch(0.14 0.02 220) 0%, oklch(0.08 0.005 220) 100%)",
-          }}
-        >
-          {/* Grid */}
-          <svg
-            className="absolute inset-0 w-full h-full opacity-10"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <defs>
-              <pattern
-                id="grid"
-                width="60"
-                height="60"
-                patternUnits="userSpaceOnUse"
-              >
-                <path
-                  d="M 60 0 L 0 0 0 60"
-                  fill="none"
-                  stroke="oklch(0.75 0.18 192)"
-                  strokeWidth="0.5"
-                />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid)" />
-          </svg>
+      {/* Live camera feed — uqab_video_server MJPEG stream */}
+      <img
+        key={reloadToken}
+        src={streamSrc}
+        onLoad={handleStreamLoad}
+        onError={handleStreamError}
+        alt="Live UAV camera feed"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
 
-          {/* Placeholder */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none">
-            <p className="font-mono text-xs text-muted-foreground opacity-40 tracking-widest uppercase">
-              Awaiting Video Stream
-            </p>
+      {/* Placeholder — shown until the first frame loads, or after a drop */}
+      {!videoOk && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div
+            className="w-full h-full"
+            style={{
+              background:
+                "radial-gradient(ellipse at center, oklch(0.14 0.02 220) 0%, oklch(0.08 0.005 220) 100%)",
+            }}
+          >
+            {/* Grid */}
+            <svg
+              className="absolute inset-0 w-full h-full opacity-10"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <defs>
+                <pattern
+                  id="grid"
+                  width="60"
+                  height="60"
+                  patternUnits="userSpaceOnUse"
+                >
+                  <path
+                    d="M 60 0 L 0 0 0 60"
+                    fill="none"
+                    stroke="oklch(0.75 0.18 192)"
+                    strokeWidth="0.5"
+                  />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#grid)" />
+            </svg>
+
+            {/* Placeholder */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none">
+              <p className="font-mono text-xs text-muted-foreground opacity-40 tracking-widest uppercase">
+                Awaiting Video Stream
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Centre reticle — turns red on lock */}
       <div
@@ -163,8 +212,12 @@ export default function VideoPanel({ onLockConfirmed }: VideoPanelProps) {
       {/* TOP-LEFT: LIVE badge */}
       <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
         <span className="flex items-center gap-1.5 bg-black/70 border border-border rounded px-2 py-0.5 text-[10px] font-mono tracking-widest uppercase">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
-          <span className="text-red-400">LIVE</span>
+          <span
+            className={`w-1.5 h-1.5 rounded-full inline-block ${videoOk ? "bg-red-500 animate-pulse" : "bg-zinc-500"}`}
+          />
+          <span className={videoOk ? "text-red-400" : "text-muted-foreground"}>
+            {videoOk ? "LIVE" : "NO SIGNAL"}
+          </span>
         </span>
       </div>
 

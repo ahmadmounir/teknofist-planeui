@@ -72,6 +72,7 @@ interface AppState {
     mavlink: boolean;
     rpi: boolean;
     server: boolean;
+    video: boolean;
   };
   loginError: string | null;
 }
@@ -85,7 +86,7 @@ const initialState: AppState = {
   hssZones: [],
   qrLocation: null,
   telemetry: DEFAULT_TELEMETRY,
-  connectionStatus: { mavlink: false, rpi: false, server: false },
+  connectionStatus: { mavlink: false, rpi: false, server: false, video: false },
   loginError: null,
 };
 
@@ -101,7 +102,7 @@ type Action =
   | { type: "UPDATE_TELEMETRY"; data: Partial<LiveTelemetry> }
   | {
       type: "SET_CONNECTION";
-      key: "mavlink" | "rpi" | "server";
+      key: "mavlink" | "rpi" | "server" | "video";
       value: boolean;
     };
 
@@ -154,6 +155,7 @@ interface AppContextValue {
   confirmLockOn: (otonom: boolean) => Promise<void>;
   sendKamikaze: (req: KamikazeBilgisiRequest) => Promise<void>;
   fetchQR: () => Promise<void>;
+  setVideoConnected: (connected: boolean) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -260,6 +262,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (isApiError(e) && e.status === 401) dispatch({ type: "LOGOUT" });
       console.error("[GCS] Kamikaze paketi gönderilemedi:", e);
     }
+  }, []);
+
+  // ── Video stream connection (set by VideoPanel from <img> load/error) ──────
+  const setVideoConnected = useCallback((connected: boolean) => {
+    dispatch({ type: "SET_CONNECTION", key: "video", value: connected });
   }, []);
 
   // ── Fetch QR location ──────────────────────────────────────────────────────
@@ -405,6 +412,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     confirmLockOn,
     sendKamikaze,
     fetchQR,
+    setVideoConnected,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

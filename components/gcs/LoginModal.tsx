@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, type FormEvent } from "react"
 import { useApp } from "@/context/AppContext"
 import { Plane, Lock, User, AlertCircle } from "lucide-react"

@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { Plane, Wifi, WifiOff, Shield, Clock } from "lucide-react";
 import { useApp } from "@/context/AppContext";

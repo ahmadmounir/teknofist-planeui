@@ -1,5 +1,3 @@
-"use client"
-
 interface ArtificialHorizonProps {
   pitch: number  // degrees, positive = nose up
   roll: number   // degrees, positive = right bank
